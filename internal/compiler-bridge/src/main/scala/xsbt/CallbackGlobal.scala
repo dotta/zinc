@@ -35,6 +35,8 @@ sealed abstract class CallbackGlobal(
     invalidatedClassFiles.foreach { invalidatedClassFile =>
       loaders.invalidatedClassFilePaths.add(invalidatedClassFile.getCanonicalPath)
     }
+    println(
+      "Set invalidated classfiles: " + invalidatedClassFiles.map(_.getCanonicalPath).mkString(", "))
   }
 
   def callback: AnalysisCallback
