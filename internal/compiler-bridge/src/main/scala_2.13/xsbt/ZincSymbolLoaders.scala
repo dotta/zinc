@@ -2,7 +2,7 @@ package xsbt
 
 import Compat._
 import java.io.File
-import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue }
+import java.util.concurrent.{ ConcurrentHashMap, ConcurrentLinkedQueue }
 
 trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
   import global._
@@ -11,7 +11,8 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
 
   private type ConcurrentSet[A] = ConcurrentHashMap.KeySetView[A, java.lang.Boolean]
 
-  private val invalidatedClassFilePaths: ConcurrentSet[String] = ConcurrentHashMap.newKeySet[String]()
+  private val invalidatedClassFilePaths: ConcurrentSet[String] =
+    ConcurrentHashMap.newKeySet[String]()
 
   override def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit = {
     ((classRep.binary, classRep.source): @unchecked) match {
@@ -24,8 +25,9 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
         val classFile: File = bin.file
-        if (classFile != null && isInvalidClassFile(classFile.getCanonicalPath)) {
-          if (settings.verbose) inform("[symloader] ignored invalidated classfile " + classFile.getCanonicalPath)
+        if (classFile != null && isInvalidatedClassFile(classFile.getCanonicalPath)) {
+          if (settings.verbose)
+            inform("[symloader] ignored invalidated classfile " + classFile.getCanonicalPath)
           () // An invalidated class file should not be loaded
         } else if (bin.path.startsWith("_BPICKLE_")) {
           enterClassAndModule(owner, classRep.name, new ZincPickleLoader(bin, _, _))
