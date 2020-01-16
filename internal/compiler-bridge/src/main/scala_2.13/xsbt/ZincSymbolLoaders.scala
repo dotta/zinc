@@ -11,7 +11,7 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
 
   private type ConcurrentSet[A] = ConcurrentHashMap.KeySetView[A, java.lang.Boolean]
 
-  private val invalidatedClassFilePaths: ConcurrentSet[String] =
+  val invalidatedClassFilePaths: ConcurrentSet[String] =
     ConcurrentHashMap.newKeySet[String]()
 
   override def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit = {
@@ -25,7 +25,7 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
         val classFile: File = bin.file
-        if (classFile != null && isInvalidatedClassFile(classFile.getCanonicalPath)) {
+        if (classFile != null && invalidatedClassFilePaths.contains(classFile.getCanonicalPath)) {
           if (settings.verbose)
             inform("[symloader] ignored invalidated classfile " + classFile.getCanonicalPath)
           () // An invalidated class file should not be loaded
@@ -36,10 +36,6 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
         }
     }
   }
-
-  def isInvalidatedClassFile(path: String): Boolean = invalidatedClassFilePaths.contains(path)
-  def addInvalidatedClassFile(path: String): Unit = invalidatedClassFilePaths.add(path)
-  def clearInvalidatedClassFiles(): Unit = invalidatedClassFilePaths.clear()
 
   final class ZincPickleLoader(
       val pickleFile: AbstractFile,
