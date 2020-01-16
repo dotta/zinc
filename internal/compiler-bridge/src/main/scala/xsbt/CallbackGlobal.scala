@@ -31,9 +31,9 @@ sealed abstract class CallbackGlobal(
   import Compat._
 
   def setInvalidatedClassFiles(invalidatedClassFiles: Array[File]): Unit = {
-    loaders.invalidatedClassFilePaths.clear()
+    loaders.clearInvalidatedClassFiles()
     invalidatedClassFiles.foreach { invalidatedClassFile =>
-      loaders.invalidatedClassFilePaths.+=(invalidatedClassFile.getCanonicalPath)
+      loaders.addInvalidatedClassFile(invalidatedClassFile.getCanonicalPath)
     }
   }
 
