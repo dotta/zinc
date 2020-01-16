@@ -2,14 +2,16 @@ package xsbt
 
 import Compat._
 import java.io.File
-import scala.collection.mutable
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue }
 import scala.tools.nsc.ZincPicklePath
 
 trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
   import global._
   import scala.tools.nsc.io.AbstractFile
   import scala.tools.nsc.util.ClassRepresentation
-  val invalidatedClassFilePaths: mutable.HashSet[String] = new mutable.HashSet[String]()
+  private type ConcurrentSet[A] = ConcurrentHashMap.KeySetView[A, java.lang.Boolean]
+
+  private val invalidatedClassFilePaths: ConcurrentSet[String] = ConcurrentHashMap.newKeySet[String]()
 
   override def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit = {
     ((classRep.binary, classRep.source): @unchecked) match {
@@ -22,7 +24,7 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
         val classFile: File = bin.file
-        if (classFile != null && invalidatedClassFilePaths.contains(classFile.getCanonicalPath)) {
+        if (classFile != null && isInvalidatedClassFile(classFile.getCanonicalPath)) {
           () // An invalidated class file should not be loaded
         } else if (bin.path.startsWith("_BPICKLE_")) {
           enterClassAndModule(owner, classRep.name, new ZincPickleLoader(bin, _, _))
@@ -31,6 +33,11 @@ trait ZincSymbolLoaders extends GlobalSymbolLoaders with ZincPickleCompletion {
         }
     }
   }
+
+  def isInvalidatedClassFile(path: String): Boolean = invalidatedClassFilePaths.contains(path)
+  def addInvalidatedClassFile(path: String): Unit = invalidatedClassFilePaths.add(path)
+  def clearInvalidatedClassFiles(): Unit = invalidatedClassFilePaths.clear()
+
   final class ZincPickleLoader(
       val pickleFile: AbstractFile,
       clazz: ClassSymbol,
